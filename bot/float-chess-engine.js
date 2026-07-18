@@ -897,4 +897,3 @@ module.exports = {
   isColorInCheck,
   isSquareAttacked,
 };
-
