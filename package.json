@@ -1,0 +1,17 @@
+{
+  "name": "sewers-and-shadows-bot",
+  "version": "0.1.0",
+  "description": "Discord bot: Float Chess duet variant with a Pennywise persona layer.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node ../test-float-chess.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.15.3",
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
