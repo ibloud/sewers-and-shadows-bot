@@ -12,7 +12,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { FloatChessGame } = require('../../float-chess-engine.js');
+const { FloatChessGame } = require('../float-chess-engine.js');
 const pennywiseAI = require('./pennywiseAI.js');
 const violetAI = require('./violetAI.js');
 
