@@ -6,15 +6,19 @@
  *   'vs-pennywise' — a human plays 'w' against Pennywise ('b', AI)
  *   'exhibition'   — fully autonomous: Violet ('w', AI) vs Pennywise
  *                    ('b', AI)
+ *
+ * FIXED: originally called violetAI.chooseMove() here, but violetAI.js
+ * is chess-only (expects a board[r][c] grid) and threw a TypeError the
+ * moment an exhibition card match ran. Now uses violetCardsAI.js, a
+ * dedicated card-only module with the same chooseMove(game, side) shape
+ * as pennywiseCardsAI.js.
  */
 
 'use strict';
 
 const { FloatCardsGame } = require('../float-cards-engine.js');
 const pennywiseCardsAI = require('./pennywiseCardsAI.js');
-const violetAI = require('./violetAI.js'); // reuse Violet's existing chess AI module if it also
-                                            // exports a generic chooseHighValueCard; otherwise
-                                            // add a small violetCardsAI.js mirroring pennywiseCardsAI.js
+const violetCardsAI = require('./violetCardsAI.js');
 
 const HUMAN_SIDE = 'w';
 const PENNYWISE_SIDE = 'b';
@@ -81,10 +85,7 @@ function playAutoCardTurn(channelId) {
   const { game } = session;
   if (game.status !== 'active') return { ok: false, reason: 'game-over' };
 
-  // NOTE: violetAI.chooseMove here is a placeholder call — if violetAI.js
-  // is chess-specific, add a small violetCardsAI.js (same shape as
-  // pennywiseCardsAI.js) and swap this line to use that instead.
-  const violetCard = violetAI.chooseMove ? violetAI.chooseMove(game, VIOLET_SIDE) : null;
+  const violetCard = violetCardsAI.chooseMove(game, VIOLET_SIDE);
   const pennywiseCard = pennywiseCardsAI.chooseMove(game, PENNYWISE_SIDE);
   if (!violetCard || !pennywiseCard) return { ok: false, reason: 'no-cards-available' };
 
@@ -102,12 +103,21 @@ function playAutoCardTurn(channelId) {
   };
 }
 
+function resign(channelId) {
+  const session = cardSessions.get(channelId);
+  if (!session) return { ok: false, reason: 'no-active-game' };
+  if (session.mode !== 'vs-pennywise') return { ok: false, reason: 'exhibition-matches-cannot-be-resigned-by-a-spectator' };
+  session.game.status = 'resigned-w';
+  return { ok: true };
+}
+
 module.exports = {
   startNewCardGame,
   getCardSession,
   endCardSession,
   submitHumanCardAndResolve,
   playAutoCardTurn,
+  resign,
   HUMAN_SIDE,
   PENNYWISE_SIDE,
   VIOLET_SIDE,
