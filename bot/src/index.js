@@ -504,8 +504,11 @@ client.on('messageCreate', async (message) => {
   }
 });
 
+const { initGameTriggers } = require('./gameTrigger');
+
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
+  initGameTriggers(client, () => {}, '1528169606597050478');
 });
 
 async function main() {
