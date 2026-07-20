@@ -896,4 +896,5 @@ module.exports = {
   moveIsSafe,
   isColorInCheck,
   isSquareAttacked,
+  positionKey,
 };
