@@ -66,7 +66,7 @@ function applyMoveToScratchBoard(board, from, to) {
   return scratch;
 }
 
-function scoreMove(board, color, move) {
+function scoreMove(board, color, move, lastMove) {
   let score = 0;
   const target = board[move.to.r][move.to.c];
   if (target) score += PIECE_VALUE[target.type] * 10; // captures matter most
@@ -80,6 +80,25 @@ function scoreMove(board, color, move) {
   // out of scope for a 1-ply greedy evaluator — flagged as a known
   // limitation, not a bug. A stronger engine would need at least a
   // 2-ply search (see file header) to catch that.
+
+  // Light anti-repeat — NOT Violet's deliberate case-file avoidance.
+  // Pennywise just has a passing distaste for repeating his own last
+  // move OR walking straight back where he came from — covers both
+  // the "crossing streams" bounce (proposed move never actually
+  // happens, board looks unchanged) and genuine back-and-forth
+  // shuffling. A much smaller penalty than Violet's, so his existing
+  // jitter still does most of the real work of keeping him
+  // unpredictable, in keeping with "chaotic," not "methodical."
+  if (lastMove && lastMove[move.piece.id]) {
+    const last = lastMove[move.piece.id];
+    const isExactRepeat = last.from.r === move.from.r && last.from.c === move.from.c &&
+      last.to.r === move.to.r && last.to.c === move.to.c;
+    const isReversal = last.from.r === move.to.r && last.from.c === move.to.c &&
+      last.to.r === move.from.r && last.to.c === move.from.c;
+    if (isExactRepeat || isReversal) {
+      score -= 40;
+    }
+  }
 
   return score;
 }
@@ -95,12 +114,16 @@ function chooseMove(game, color) {
   const legalMoves = enumerateLegalMoves(game.board, color);
   if (legalMoves.length === 0) return null; // no legal move (stalemate/checkmate already being decided elsewhere)
 
+  game.aiLastMove = game.aiLastMove || {};
+
   let best = legalMoves[0];
   let bestScore = -Infinity;
   for (const m of legalMoves) {
-    const s = scoreMove(game.board, color, m) + Math.random() * 0.3; // small jitter so play isn't robotically deterministic
+    const s = scoreMove(game.board, color, m, game.aiLastMove) + Math.random() * 0.3; // small jitter so play isn't robotically deterministic
     if (s > bestScore) { bestScore = s; best = m; }
   }
+
+  game.aiLastMove[best.piece.id] = { from: { r: best.from.r, c: best.from.c }, to: { r: best.to.r, c: best.to.c } };
 
   const move = { from: toAlg(best.from), to: toAlg(best.to) };
 
