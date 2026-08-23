@@ -129,7 +129,29 @@ function createPersona({ systemPromptPath }) {
     return callClaude(userMessage);
   }
 
-  return { narrateTurn, converse, describeEvent };
+
+  async function narrateCardTurn({ selfCard, opponentCard, events, opponentName, gameStatus }) {
+    const eventSummary = events && events.length
+      ? events.map(describeEvent).join('\n')
+      : 'The round resolved cleanly — no special effects.';
+
+    const userMessage = [
+      `Opponent: ${opponentName}`,
+      `Their card: ${opponentCard}`,
+      `Your card: ${selfCard}`,
+      `RP pools: ${JSON.stringify(gameStatus.rp)}`,
+      `Game status: ${gameStatus.status}`,
+      ``,
+      `What happened this round:`,
+      eventSummary,
+      ``,
+      `Narrate this card round in character, addressing ${opponentName}. Reference both cards played, react to any notable event above, and stay within your tone guardrails. Keep it to 2-4 lines.`,
+    ].join('\n');
+
+    return callClaude(userMessage);
+  }
+
+  return { narrateTurn, narrateCardTurn, converse, describeEvent };
 }
 
 module.exports = { createPersona, describeEvent };
