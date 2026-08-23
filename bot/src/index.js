@@ -211,19 +211,19 @@ function startCardExhibitionLoop(channel, channelId) {
     // worth a live playtest and tuning pennywisePersona.js/violetPersona.js
     // if the phrasing leans too heavily on chess-only terms.
     try {
-      const violetLine = await violetPersona.narrateTurn({
+      const violetLine = await violetPersona.narrateCardTurn({
+        selfCard: result.violetCard,
+        opponentCard: result.pennywiseCard,
         events: result.events,
-        selfMove: result.violetCard,
-        opponentMove: result.pennywiseCard,
         opponentName: 'Pennywise',
         gameStatus: result.gameStatus,
       });
       await channel.send(`**Violet:**\n${violetLine}`);
 
-      const pennywiseLine = await pennywisePersona.narrateTurn({
+      const pennywiseLine = await pennywisePersona.narrateCardTurn({
+        selfCard: result.pennywiseCard,
+        opponentCard: result.violetCard,
         events: result.events,
-        selfMove: result.pennywiseCard,
-        opponentMove: result.violetCard,
         opponentName: 'Violet',
         gameStatus: result.gameStatus,
       });
@@ -443,10 +443,10 @@ client.on('interactionCreate', async (interaction) => {
 
       let narration;
       try {
-        narration = await pennywisePersona.narrateTurn({
+        narration = await pennywisePersona.narrateCardTurn({
+          selfCard: result.pennywiseCard,
+          opponentCard: result.humanCard,
           events: result.events,
-          selfMove: result.pennywiseCard,
-          opponentMove: result.humanCard,
           opponentName: session.playerName,
           gameStatus: result.gameStatus,
         });
