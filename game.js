@@ -1,3 +1,6 @@
+'use strict';
+(() => {
+const factories={"bot/float-chess-engine.js": function(require,module,exports){
 /**
  * FLOAT CHESS ENGINE
  * ──────────────────
@@ -898,3 +901,253 @@ module.exports = {
   isSquareAttacked,
   positionKey,
 };
+
+},
+"bot/src/pennywiseAI.js": function(require,module,exports){
+/**
+ * PENNYWISE AI — move selection
+ * ─────────────────────────────
+ * This is deliberately NOT the same thing as pennywisePersona.js.
+ * This module picks a legal move. The persona module writes flavor
+ * text about whatever move got picked. Keeping them separate means
+ * a bad LLM response never produces an illegal or nonsensical move —
+ * the engine only ever receives moves that this module has already
+ * checked against the rules.
+ *
+ * Strategy: a simple 1-ply greedy evaluator (material + a few
+ * heuristics), NOT a strong chess engine. The point of this bot is
+ * personality and the Float Chess variant's chaos, not competitive
+ * strength. If you want a stronger opponent later, this is the file
+ * to swap out — everything else (persona, Discord layer, engine)
+ * doesn't need to know or care how moves get chosen.
+ */
+
+'use strict';
+
+const {
+  toRC,
+  toAlg,
+  pseudoLegalMoves,
+  moveIsSafe,
+  isColorInCheck,
+} = require('../float-chess-engine.js');
+
+const PIECE_VALUE = { P: 1, N: 3, B: 3, R: 5, Q: 9, K: 0 };
+
+// Small positional nudge toward the center, so the bot doesn't play
+// like it's only ever grabbing material — purely cosmetic weighting.
+const CENTER_BONUS = (r, c) => {
+  const dr = Math.abs(3.5 - r), dc = Math.abs(3.5 - c);
+  return (3.5 - Math.max(dr, dc)) * 0.05;
+};
+
+/**
+ * Enumerate every legal standard move for `color` on the given board.
+ * Does NOT include the once-per-game specials (float jump, mirror
+ * shift, sewer slide, red balloon) — those are chosen separately,
+ * occasionally, for flavor (see maybeChooseSpecial below), since
+ * they're precious one-time resources and shouldn't be spent by a
+ * generic greedy evaluator.
+ */
+function enumerateLegalMoves(board, color) {
+  const moves = [];
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const piece = board[r][c];
+      if (!piece || piece.color !== color) continue;
+      for (const m of pseudoLegalMoves(board, r, c)) {
+        if (moveIsSafe(board, { r, c }, m)) {
+          moves.push({ from: { r, c }, to: m, piece });
+        }
+      }
+    }
+  }
+  return moves;
+}
+
+function applyMoveToScratchBoard(board, from, to) {
+  const scratch = board.map(row => row.map(cell => (cell ? { ...cell } : null)));
+  scratch[to.r][to.c] = scratch[from.r][from.c];
+  scratch[from.r][from.c] = null;
+  return scratch;
+}
+
+function scoreMove(board, color, move, lastMove) {
+  let score = 0;
+  const target = board[move.to.r][move.to.c];
+  if (target) score += PIECE_VALUE[target.type] * 10; // captures matter most
+  score += CENTER_BONUS(move.to.r, move.to.c);
+
+  const scratch = applyMoveToScratchBoard(board, move.from, move.to);
+  const otherColor = color === 'w' ? 'b' : 'w';
+  if (isColorInCheck(scratch, otherColor)) score += 2; // reward giving check
+
+  // Mild preference for not leaving high-value pieces "hanging" is
+  // out of scope for a 1-ply greedy evaluator — flagged as a known
+  // limitation, not a bug. A stronger engine would need at least a
+  // 2-ply search (see file header) to catch that.
+
+  // Light anti-repeat — NOT Violet's deliberate case-file avoidance.
+  // Pennywise just has a passing distaste for repeating his own last
+  // move OR walking straight back where he came from — covers both
+  // the "crossing streams" bounce (proposed move never actually
+  // happens, board looks unchanged) and genuine back-and-forth
+  // shuffling. A much smaller penalty than Violet's, so his existing
+  // jitter still does most of the real work of keeping him
+  // unpredictable, in keeping with "chaotic," not "methodical."
+  if (lastMove && lastMove[move.piece.id]) {
+    const last = lastMove[move.piece.id];
+    const isExactRepeat = last.from.r === move.from.r && last.from.c === move.from.c &&
+      last.to.r === move.to.r && last.to.c === move.to.c;
+    const isReversal = last.from.r === move.to.r && last.from.c === move.to.c &&
+      last.to.r === move.from.r && last.to.c === move.from.c;
+    if (isExactRepeat || isReversal) {
+      score -= 40;
+    }
+  }
+
+  return score;
+}
+
+/**
+ * Picks Pennywise's move for this turn. Returns a move object shaped
+ * like what FloatChessGame.submitMove expects: { from, to, special?, promotion? }.
+ * `game` must not have had its board mutated yet this turn — this
+ * looks only at the PRE-turn board, same as the human's move, so
+ * neither side has an information advantage (true simultaneity).
+ */
+function chooseMove(game, color) {
+  const legalMoves = enumerateLegalMoves(game.board, color);
+  if (legalMoves.length === 0) return null; // no legal move (stalemate/checkmate already being decided elsewhere)
+
+  game.aiLastMove = game.aiLastMove || {};
+
+  let best = legalMoves[0];
+  let bestScore = -Infinity;
+  for (const m of legalMoves) {
+    const s = scoreMove(game.board, color, m, game.aiLastMove) + Math.random() * 0.3; // small jitter so play isn't robotically deterministic
+    if (s > bestScore) { bestScore = s; best = m; }
+  }
+
+  game.aiLastMove[best.piece.id] = { from: { r: best.from.r, c: best.from.c }, to: { r: best.to.r, c: best.to.c } };
+
+  const move = { from: toAlg(best.from), to: toAlg(best.to) };
+
+  // Auto-queen on promotion — Pennywise doesn't do underpromotion for flavor.
+  const lastRank = color === 'w' ? 7 : 0;
+  if (best.piece.type === 'P' && best.to.r === lastRank) {
+    move.promotion = 'Q';
+  }
+
+  return move;
+}
+
+module.exports = { chooseMove, enumerateLegalMoves, scoreMove };
+
+},
+"browser/session.js": function(require,module,exports){
+'use strict';
+const { FloatChessGame, toAlg, toRC } = require('../bot/float-chess-engine.js');
+const { enumerateLegalMoves, scoreMove } = require('../bot/src/pennywiseAI.js');
+const BUILD = 'float-browser-review-1';
+const SPECIALS = ['', 'mirrorShift', 'floatJump', 'sewerSlide', 'redBalloon', 'castleK', 'castleQ'];
+const PROMOTIONS = ['Q', 'R', 'B', 'N'];
+const moveKey = m => [m.from, m.to, m.special || '', m.promotion || ''].join(':');
+function validShape(move) {
+  return move && /^[a-h][1-8]$/.test(move.from) && /^[a-h][1-8]$/.test(move.to)
+    && SPECIALS.includes(move.special || '') && (!move.promotion || PROMOTIONS.includes(move.promotion));
+}
+// One narrow adapter to the existing engine's validator; no duplicate rules.
+// Simultaneous en passant is not offered before an opponent has committed.
+function validate(game, color, move) {
+  if (!validShape(move)) return { legal: false, reason: 'Use squares a1–h8 and a listed ability/promotion.' };
+  if (game.status !== 'active') return { legal: false, reason: 'This match has finished. Replay or restart.' };
+  return game._validateMove(color, move);
+}
+function legalActions(game, color = 'w', source) {
+  if (game.status !== 'active') return [];
+  const actions = [];
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const piece = game.board[r][c], from = toAlg({ r, c });
+    if (!piece || piece.color !== color || (source && source !== from)) continue;
+    for (let tr = 0; tr < 8; tr++) for (let tc = 0; tc < 8; tc++) {
+      const to = toAlg({ r: tr, c: tc });
+      for (const special of SPECIALS) {
+        // Only ask the engine about abilities belonging to this piece type.
+        const types = { mirrorShift: 'B', floatJump: 'N', sewerSlide: 'R', redBalloon: 'P', castleK: 'K', castleQ: 'K' };
+        if (special && types[special] !== piece.type) continue;
+        const promotions = piece.type === 'P' && (tr === 0 || tr === 7) ? PROMOTIONS : [null];
+        for (const promotion of promotions) {
+          const move = { from, to, ...(special ? { special } : {}), ...(promotion ? { promotion } : {}) };
+          if (validate(game, color, move).legal) actions.push(move);
+        }
+      }
+    }
+  }
+  return actions;
+}
+function chooseOpponent(game) {
+  // Reuse the historical evaluator, filtering through full engine legality
+  // (the original enumerator does not account for slowed pieces).
+  const candidates = enumerateLegalMoves(game.board, 'b').filter(m =>
+    validate(game, 'b', { from: toAlg(m.from), to: toAlg(m.to) }).legal);
+  candidates.sort((a, b) => scoreMove(game.board, 'b', b, game.aiLastMove) - scoreMove(game.board, 'b', a, game.aiLastMove)
+    || moveKey({ from: toAlg(a.from), to: toAlg(a.to) }).localeCompare(moveKey({ from: toAlg(b.from), to: toAlg(b.to) })));
+  const best = candidates[0];
+  if (!best) return legalActions(game, 'b')[0] || null;
+  const move = { from: toAlg(best.from), to: toAlg(best.to) };
+  if (best.piece.type === 'P' && best.to.r === 0) move.promotion = 'Q';
+  return move;
+}
+function narrate(events) {
+  return events.length ? events.map(e => e.type.replace(/([A-Z])/g, ' $1').toLowerCase()).join('; ') + '.' : 'Both moves resolved.';
+}
+const clone = value => structuredClone(value);
+class Match {
+  constructor() { this.restart(); }
+  restart() {
+    this.game = new FloatChessGame();
+    this.history = [];
+    this.snapshots = [clone(this.game.toJSON())];
+    // Commit from the pre-turn board before accepting the human's selection.
+    this.opponent = chooseOpponent(this.game);
+    this.completed = false;
+  }
+  play(move) {
+    if (this.completed) return { ok: false, reason: 'Match finished. Replay or restart.' };
+    const result = validate(this.game, 'w', move);
+    if (!result.legal) return { ok: false, reason: result.reason };
+    if (!this.opponent) return { ok: false, reason: 'Opponent has no supported legal action. Restart or report a finding.' };
+    // A transaction preserves the match if resolution throws. Narration is outside it.
+    const backup = clone(this.game);
+    const opponent = clone(this.opponent), human = clone(move), turn = this.game.turn;
+    try {
+      const a = this.game.submitMove('w', human);
+      const b = this.game.submitMove('b', opponent);
+      if (!a.accepted || !b.accepted) throw new Error('Engine rejected a submission.');
+    } catch {
+      this.game = Object.assign(new FloatChessGame(), backup);
+      return { ok: false, reason: 'Resolution failed; the previous position is preserved. Report a finding or retry.' };
+    }
+    const events = clone(this.game.lastEvents);
+    this.history.push({ turn, human, opponent, events, status: this.game.status });
+    this.snapshots.push(clone(this.game.toJSON()));
+    this.completed = this.game.status !== 'active';
+    this.opponent = this.completed ? null : chooseOpponent(this.game);
+    return { ok: true, events: clone(events) };
+  }
+  finish() { this.completed = true; } // Presentation/session end; never claims an engine win.
+  summary() {
+    return { build: BUILD, rules: 'Float Chess engine at 8140e08b92240eeaf53485964348d91547f97bc9',
+      mode: 'Human (white) vs Harbour (black), heuristic opponent',
+      status: this.game.status === 'active' && this.completed ? 'Ended by visitor; no winner declared' : this.game.status,
+      publication: 'Local preview only; no identity, signature or publication', turns: clone(this.history) };
+  }
+}
+module.exports = { Match, legalActions, validate, chooseOpponent, narrate, BUILD, moveKey };
+
+}}, cache={};
+function load(id){if(cache[id])return cache[id].exports; const module={exports:{}};cache[id]=module;
+factories[id](p=>{const parts=id.split('/');parts.pop();for(const part of p.split('/')){if(part==='..')parts.pop();else if(part!=='.')parts.push(part);}return load(parts.join('/'));},module,module.exports);return module.exports;}
+window.FloatPreview=load('browser/session.js');
+})();
