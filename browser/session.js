@@ -1,7 +1,7 @@
 'use strict';
 const { FloatChessGame, toAlg, toRC } = require('../bot/float-chess-engine.js');
 const { enumerateLegalMoves, scoreMove } = require('../bot/src/pennywiseAI.js');
-const BUILD = 'derry-cards-review-3';
+const BUILD = 'derry-journal-review-4';
 const SPECIALS = ['', 'mirrorShift', 'floatJump', 'sewerSlide', 'redBalloon', 'castleK', 'castleQ'];
 const PROMOTIONS = ['Q', 'R', 'B', 'N'];
 const moveKey = m => [m.from, m.to, m.special || '', m.promotion || ''].join(':');

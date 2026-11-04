@@ -6,6 +6,8 @@ VAR hoodie = false
 VAR route = false
 VAR encounter = false
 VAR result = ""
+VAR journal = false
+VAR reflection = ""
 VAR ended = false
 VAR cards_entered = false
 VAR cards_result = ""
@@ -24,6 +26,7 @@ You notice a sticker beside the stairwell: a small mark repeated below street le
 A sticker on the shop window points toward a drain-shaped symbol.
 + [Inspect the sticker.]
 ~ sticker = true
+# item:sticker
 This bubble-free sticker is adapted as a fictional route marker; its arrow is a clue, not an instruction to enter a real drain. You keep its direction in mind.
 -> street
 + [Follow Violet to the fictional stairwell.] -> below
@@ -31,12 +34,15 @@ This bubble-free sticker is adapted as a fictional route marker; its arrow is a 
 Violet holds a candle beneath a covered lamp niche. Her hoodie is part of the cosplay; the person wearing it remains Violet.
 + [Inspect the candle.]
 ~ candle = true
-A glass jar soy wax candle, based on the Dallas XY shop screenshot. In this story its light can reveal the route; no purchase is needed.
+# item:candle
+A glass jar soy wax candle. In this story its light can reveal the route; no purchase is needed.
 -> below
 + [Inspect the hoodie.]
 ~ hoodie = true
-A black Essential Heavyweight Hoodie with a bold front badge, based on the Dallas XY screenshot. Orange-red details and pale yellow cuffs are Violet’s additional costume styling. Violet calls it a costume, not a transformation.
+# item:hoodie
+A black heavyweight hoodie with a bold front badge. Orange-red details and pale yellow cuffs are Violet’s additional costume styling. Violet calls it a costume, not a transformation.
 -> below
++ [Inspect the Final Thoughts journal.] -> journal_entry
 + {candle} [Use the candle to reveal the route.]
 ~ route = true
 Light catches the same arrow you saw above. The dry passage leads to a table.
@@ -81,17 +87,41 @@ At the next table Violet and Pennywise lay out cards. You can play Float Cards a
 You and Violet step into the rain. The chapter is complete. You can inspect the objects again or replay with a different first choice. No shop visit or purchase was required.
 + [Inspect the story objects again.] -> objects
 === objects ===
-The objects remain part of the story; shop destinations have not been verified for this review.
+The objects remain part of the story. You may inspect them or visit the shop; neither requires a purchase.
 + [Inspect the sticker again.]
 ~ sticker = true
+# item:sticker
 A printed arrow: the first clue on the route.
 -> objects
 + [Inspect the candle again.]
 ~ candle = true
+# item:candle
 A protected light: the route-revealing item.
 -> objects
 + [Inspect the hoodie again.]
 ~ hoodie = true
+# item:hoodie
 Violet's cosplay layer: costume does not erase her identity.
 -> objects
++ [Inspect the Final Thoughts journal again.] -> journal_return
 + [Return to the ending.] -> ending
+
+=== journal_entry ===
+~ journal = true
+# item:journal
+A spiral-bound journal lies beside the candle. Violet suggests recording what you noticed before deciding what it means.
++ [Record the route clue.]
+~ reflection = "clue"
+You mark the repeated arrow and leave its meaning open.
+-> below
++ [Close the journal for now.] -> below
+
+=== journal_return ===
+~ journal = true
+# item:journal
+The journal offers a place to separate what happened from what you expected.
++ [Record a thought about the table encounters.]
+~ reflection = "encounters"
+You note that finishing, losing and choosing to leave are different outcomes. Each still brought you back to the street.
+-> objects
++ [Close the journal.] -> objects
