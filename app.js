@@ -49,7 +49,7 @@
     fillChoices(); drawBoard();
     $('history').replaceChildren();
     if (!match.history.length) {const li=document.createElement('li');li.textContent='No turns yet. Choose a legal move to begin.';$('history').append(li);}
-    match.history.forEach(h=>{const li=document.createElement('li');li.textContent=`Turn ${h.turn}: you ${describe(h.human)}; Harbour ${describe(h.opponent)}. ${narrate(h.events)} Status: ${h.status}.`;$('history').append(li);});
+    match.history.forEach(h=>{const li=document.createElement('li');li.textContent=`Turn ${h.turn}: you ${describe(h.human)}; Pennywise ${describe(h.opponent)}. ${narrate(h.events)} Status: ${h.status}.`;$('history').append(li);});
     $('replay').replaceChildren();option($('replay'),'live','Live position');
     match.snapshots.forEach((s,i)=>option($('replay'),String(i),i===0?'Starting position':`After turn ${i} · ${s.status}`));$('replay').value=replay;
     if (!$('summary-panel').hidden) $('summary').value=JSON.stringify(match.summary(),null,2);
@@ -75,16 +75,19 @@
       const result=match.play(submitted);busy=false;
       if(!result.ok){render();announce(result.reason);return;}
       try {$('narration').textContent=narrate(result.events);}catch{$('narration').textContent='Narration unavailable. Inspect the event history.';}
+      if(match.completed||match.history.length>=3){const outcome=match.game.status==='won-w'?'won':match.game.status==='won-b'?'lost':match.game.status==='draw'?'draw':'bounded';match.finish();render();window.ChapterBridge.complete(outcome);return;}
       clear(`Turn resolved. ${match.completed?'Match complete: '+match.game.status+'. Replay or restart.':'Turn '+match.game.turn+'. Choose your next move.'}`);
       $('from').focus();
     });
   });
   $('restart').addEventListener('click',()=>{match.restart();replay='live';$('summary-panel').hidden=true;$('narration').textContent='Scripted narration appears after resolution.';clear('New match. Turn 1. Choose a white piece.');$('from').focus();});
-  $('finish').addEventListener('click',()=>{match.finish();clear('Match ended by you. No winner declared. Replay the snapshots or restart.');$('replay').focus();});
+  $('finish').addEventListener('click',()=>{match.finish();if(window.ChapterBridge.complete('left'))return;clear('Match ended by you. No winner declared. Replay the snapshots or restart.');$('replay').focus();});
   $('replay').addEventListener('change',()=>{replay=$('replay').value;source='';selection=null;render();announce(replay==='live'?'Live position. '+(match.completed?'Match complete.':'Choose your move.'):`Inspecting ${$('replay').selectedOptions[0].textContent}. Live match unchanged.`);});
   $('live').addEventListener('click',()=>{replay='live';render();announce('Live position. '+(match.completed?'Match complete. Replay or restart.':'Choose your move.'));$('from').focus();});
   $('summary-button').addEventListener('click',()=>{$('summary-panel').hidden=false;$('summary').value=JSON.stringify(match.summary(),null,2);$('summary').focus();});
   const body=`Build: ${BUILD}\nBrowser / OS:\nInput method (keyboard, pointer, assistive device):\nSteps to reproduce:\nExpected behavior:\nActual behavior:\nEvidence (remove private information):\n`;
   $('finding').href='https://github.com/ibloud/sewers-and-shadows-bot/issues/new?title='+encodeURIComponent('Float Chess finding')+'&body='+encodeURIComponent(body);
-  $('build').textContent=BUILD;render();announce('Turn 1. Human versus Harbour. Choose a white piece.');
+  document.addEventListener('chapter-chess',()=>{match.restart();replay='live';clear('Violet plays white. Three turns, or leave at any time.');});
+  for(const view of ['2d','3d'])$('view-'+view).addEventListener('click',()=>{ $('board').classList.toggle('fixed-3d',view==='3d');for(const v of ['2d','3d'])$('view-'+v).setAttribute('aria-pressed',String(view===v));});
+  $('build').textContent=BUILD;render();announce('Turn 1. Human versus Pennywise. Choose a white piece.');
 })();

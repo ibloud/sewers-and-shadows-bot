@@ -1049,7 +1049,7 @@ module.exports = { chooseMove, enumerateLegalMoves, scoreMove };
 'use strict';
 const { FloatChessGame, toAlg, toRC } = require('../bot/float-chess-engine.js');
 const { enumerateLegalMoves, scoreMove } = require('../bot/src/pennywiseAI.js');
-const BUILD = 'float-browser-review-1';
+const BUILD = 'derry-chapter-review-2';
 const SPECIALS = ['', 'mirrorShift', 'floatJump', 'sewerSlide', 'redBalloon', 'castleK', 'castleQ'];
 const PROMOTIONS = ['Q', 'R', 'B', 'N'];
 const moveKey = m => [m.from, m.to, m.special || '', m.promotion || ''].join(':');
@@ -1139,7 +1139,7 @@ class Match {
   finish() { this.completed = true; } // Presentation/session end; never claims an engine win.
   summary() {
     return { build: BUILD, rules: 'Float Chess engine at 8140e08b92240eeaf53485964348d91547f97bc9',
-      mode: 'Human (white) vs Harbour (black), heuristic opponent',
+      mode: 'Violet (player, white) vs Pennywise (black), heuristic opponent',
       status: this.game.status === 'active' && this.completed ? 'Ended by visitor; no winner declared' : this.game.status,
       publication: 'Local preview only; no identity, signature or publication', turns: clone(this.history) };
   }
