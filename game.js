@@ -1049,7 +1049,7 @@ module.exports = { chooseMove, enumerateLegalMoves, scoreMove };
 'use strict';
 const { FloatChessGame, toAlg, toRC } = require('../bot/float-chess-engine.js');
 const { enumerateLegalMoves, scoreMove } = require('../bot/src/pennywiseAI.js');
-const BUILD = 'derry-chapter-review-2';
+const BUILD = 'derry-cards-review-3';
 const SPECIALS = ['', 'mirrorShift', 'floatJump', 'sewerSlide', 'redBalloon', 'castleK', 'castleQ'];
 const PROMOTIONS = ['Q', 'R', 'B', 'N'];
 const moveKey = m => [m.from, m.to, m.special || '', m.promotion || ''].join(':');
@@ -1146,8 +1146,191 @@ class Match {
 }
 module.exports = { Match, legalActions, validate, chooseOpponent, narrate, BUILD, moveKey };
 
+},
+"bot/float-cards-engine.js": function(require,module,exports){
+/**
+ * FLOAT CARDS ENGINE
+ * ──────────────────
+ * A simple duel-style card game (standard 52-card deck, no jokers).
+ * Each side draws a hand; each round both sides commit one card
+ * face-down, then both flip. Higher rank wins the round and deals
+ * 1 RP damage to the loser. Ties deal no damage. Game ends when a
+ * side's RP hits 0, or both hands are empty (winner = higher RP).
+ *
+ * Mirrors FloatChessGame's shape so gameManager-style code can drive
+ * it the same way: constructor, .status, .turn, .submitMove(), .lastEvents.
+ */
+
+'use strict';
+
+const SUITS = ['♠', '♥', '♦', '♣'];
+const RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+const RANK_VALUE = Object.fromEntries(RANKS.map((r, i) => [r, i + 2]));
+
+function freshDeck() {
+  const deck = [];
+  for (const s of SUITS) {
+    for (const r of RANKS) deck.push(`${r}${s}`);
+  }
+  return deck;
+}
+
+function shuffle(deck) {
+  const d = [...deck];
+  for (let i = d.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [d[i], d[j]] = [d[j], d[i]];
+  }
+  return d;
+}
+
+function rankOf(card) {
+  const rank = card.slice(0, -1);
+  return RANK_VALUE[rank];
+}
+
+class FloatCardsGame {
+  constructor(handSize = 6) {
+    const deck = shuffle(freshDeck());
+    this.handA = deck.slice(0, handSize);       // 'w' side (human or Violet in exhibition)
+    this.handB = deck.slice(handSize, handSize * 2); // 'b' side (Pennywise)
+    this.rp = { w: 10, b: 10 };
+    this.slab = null;       // last resolved round, for display
+    this.status = 'active'; // 'active' | 'won-w' | 'won-b' | 'draw'
+    this.turn = 'both';     // both sides commit simultaneously each round
+    this.pendingA = null;
+    this.pendingB = null;
+    this.lastEvents = [];
+  }
+
+  handFor(side) {
+    return side === 'w' ? this.handA : this.handB;
+  }
+
+  /**
+   * Commits one side's card for the round. Once both sides have
+   * committed, the round resolves automatically.
+   * Returns { accepted, reason? }.
+   */
+  submitMove(side, card) {
+    if (this.status !== 'active') return { accepted: false, reason: 'game-over' };
+    const hand = this.handFor(side);
+    if (!hand.includes(card)) return { accepted: false, reason: 'card-not-in-hand' };
+
+    if (side === 'w') this.pendingA = card;
+    else this.pendingB = card;
+
+    if (this.pendingA && this.pendingB) {
+      this._resolveRound();
+    }
+    return { accepted: true };
+  }
+
+  _resolveRound() {
+    const a = this.pendingA;
+    const b = this.pendingB;
+    this.handA = this.handA.filter(c => c !== a);
+    this.handB = this.handB.filter(c => c !== b);
+
+    const events = [];
+    const va = rankOf(a);
+    const vb = rankOf(b);
+
+    if (va > vb) {
+      this.rp.b -= 1;
+      events.push({ type: 'roundResult', winner: 'w', a, b, loserRpLeft: this.rp.b });
+    } else if (vb > va) {
+      this.rp.w -= 1;
+      events.push({ type: 'roundResult', winner: 'b', a, b, loserRpLeft: this.rp.w });
+    } else {
+      events.push({ type: 'roundResult', winner: null, a, b });
+    }
+
+    this.slab = { a, b };
+    this.pendingA = null;
+    this.pendingB = null;
+
+    if (this.rp.w <= 0 && this.rp.b <= 0) this.status = 'draw';
+    else if (this.rp.w <= 0) this.status = 'won-b';
+    else if (this.rp.b <= 0) this.status = 'won-w';
+    else if (this.handA.length === 0 || this.handB.length === 0) {
+      if (this.rp.w === this.rp.b) this.status = 'draw';
+      else this.status = this.rp.w > this.rp.b ? 'won-w' : 'won-b';
+    }
+
+    this.lastEvents = events;
+  }
+}
+
+module.exports = { FloatCardsGame, RANK_VALUE };
+
+},
+"bot/src/pennywiseCardsAI.js": function(require,module,exports){
+/**
+ * PENNYWISE CARDS AI
+ * ──────────────────
+ * Chooses which card Pennywise plays each round. Simple, in-character
+ * heuristic (favors high cards to press an aggressive lead, holds low
+ * cards back when he already has the RP edge) — swap for something
+ * smarter later without touching callers.
+ */
+
+'use strict';
+
+const RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+const RANK_VALUE = Object.fromEntries(RANKS.map((r, i) => [r, i + 2]));
+
+function rankOf(card) {
+  return RANK_VALUE[card.slice(0, -1)];
+}
+
+/**
+ * @param {FloatCardsGame} game
+ * @param {'w'|'b'} side - which side Pennywise is playing this game
+ * @returns {string|null} the chosen card, or null if hand is empty
+ */
+function chooseMove(game, side) {
+  const hand = game.handFor(side);
+  if (!hand.length) return null;
+
+  const sorted = [...hand].sort((a, b) => rankOf(b) - rankOf(a));
+  const rpMine = side === 'w' ? game.rp.w : game.rp.b;
+  const rpTheirs = side === 'w' ? game.rp.b : game.rp.w;
+
+  // Behind on RP: throw the highest card, force a swing.
+  if (rpMine < rpTheirs) return sorted[0];
+
+  // Ahead on RP: play conservatively, keep the big cards in reserve.
+  if (rpMine > rpTheirs) return sorted[sorted.length - 1];
+
+  // Even: play the middle of the hand.
+  return sorted[Math.floor(sorted.length / 2)];
+}
+
+module.exports = { chooseMove };
+
+},
+"browser/cards-session.js": function(require,module,exports){
+'use strict';
+const {FloatCardsGame}=require('../bot/float-cards-engine.js');
+const {chooseMove}=require('../bot/src/pennywiseCardsAI.js');
+class CardsMatch {
+ constructor(){this.game=new FloatCardsGame();this.round=1;this.log=[];this.closed=false;this.commit();}
+ commit(){if(this.game.status==='active'){const card=chooseMove(this.game,'b');const result=this.game.submitMove('b',card);if(!result.accepted)throw Error('Opponent has no legal card');}}
+ play(card,round){
+  if(this.closed||this.game.status!=='active'||round!==this.round)return {ok:false,reason:'This round is already closed.'};
+  if(!this.game.handFor('w').includes(card))return {ok:false,reason:'Choose a card from Violet’s current hand.'};
+  const result=this.game.submitMove('w',card);if(!result.accepted)return {ok:false,reason:result.reason};
+  this.log.push({round:this.round,...this.game.slab,winner:this.game.lastEvents[0].winner,rp:{...this.game.rp}});this.round++;
+  this.closed=this.game.status!=='active';if(!this.closed)this.commit();
+  return {ok:true,status:this.game.status};
+ }
+ leave(){if(this.closed)return false;this.closed=true;return true;}
+}
+module.exports={CardsMatch};
+
 }}, cache={};
 function load(id){if(cache[id])return cache[id].exports; const module={exports:{}};cache[id]=module;
 factories[id](p=>{const parts=id.split('/');parts.pop();for(const part of p.split('/')){if(part==='..')parts.pop();else if(part!=='.')parts.push(part);}return load(parts.join('/'));},module,module.exports);return module.exports;}
-window.FloatPreview=load('browser/session.js');
+window.FloatPreview=load('browser/session.js');window.FloatCardsPreview=load('browser/cards-session.js');
 })();
