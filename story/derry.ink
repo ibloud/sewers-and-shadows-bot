@@ -7,6 +7,8 @@ VAR route = false
 VAR encounter = false
 VAR result = ""
 VAR ended = false
+VAR cards_entered = false
+VAR cards_result = ""
 -> entry
 === entry ===
 Derry, after rain. Violet waits beside a shuttered shop. Her orange-red costume seams and pale yellow cuffs catch the streetlight. She is a separate person cosplaying Pennywise, not Pennywise in disguise.
@@ -58,9 +60,22 @@ Pennywise waits opposite Violet. You choose Violet's white moves; Pennywise comm
 - "bounded": Three simultaneous turns are complete. This chapter's practice encounter ends without declaring a chess winner.
 - else: Violet leaves the chess encounter. No winner is declared, and the route remains open.
 }
-At the next table Violet and Pennywise lay out cards. The historical Float Cards engine uses simultaneous hidden choices and one reveal. Here, this is a written scene: the playable card mechanic is pending browser verification.
+At the next table Violet and Pennywise lay out cards. You can play Float Cards as Violet, or decline. Each side commits one hidden card before both are revealed. Higher rank deals one RP; ties deal none.
++ [Play Float Cards as Violet.]
+~ cards_entered = true
+# encounter:cards
+-> DONE
 + [Watch Violet place a card, then return to the street.] -> ending
 + [Decline the card scene and return to the street.] -> ending
+=== cards_return ===
+{cards_result:
+- "won": Violet wins the card encounter. Pennywise gathers the spent cards.
+- "lost": Pennywise wins the card encounter. Violet still keeps the way back open.
+- "draw": The card encounter ends in a draw. Both hands are empty.
+- else: Violet leaves the card encounter. No winner is declared.
+}
++ [Return to the street.] -> ending
+
 === ending ===
 ~ ended = true
 You and Violet step into the rain. The chapter is complete. You can inspect the objects again or replay with a different first choice. No shop visit or purchase was required.
