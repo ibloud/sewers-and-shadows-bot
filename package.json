@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node scripts/preview.js",
-    "build": "node scripts/build.js",
-    "test": "node bot/test-float-chess.js && node test/session.test.js"
+    "build": "node scripts/compile-story.js && node scripts/build.js",
+    "test": "node bot/test-float-chess.js && node test/session.test.js && node --test test/chapter.cjs"
   },
   "engines": { "node": ">=18" }
 }

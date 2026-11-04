@@ -13,7 +13,9 @@ window.FloatPreview=load('browser/session.js');\n})();\n`;
 if (require.main === module) {
   const out = path.join(root, 'dist');
   fs.mkdirSync(out, { recursive: true });
-  for (const name of ['index.html', 'app.js', 'style.css']) fs.copyFileSync(path.join(root, 'browser', name), path.join(out, name));
+  for (const name of ['index.html', 'app.js', 'style.css', 'chapter.js', 'story.js', 'symbol.png']) fs.copyFileSync(path.join(root, 'browser', name), path.join(out, name));
+  fs.mkdirSync(path.join(out,'vendor'),{recursive:true});
+  fs.copyFileSync(path.join(root,'browser/vendor/ink-full.js'),path.join(out,'vendor/ink-full.js'));
   fs.writeFileSync(path.join(out, 'game.js'), bundle());
   console.log('Built dist/: local assets only, no dependencies or credentials.');
 }

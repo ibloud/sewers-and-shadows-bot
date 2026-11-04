@@ -4,7 +4,7 @@ A layered Discord chess-variant prototype maintained within the Loptr Lab ecosys
 
 ## Browser review — play before sign-in
 
-A local human-versus-opponent Float Chess slice reuses the existing engine and heuristic evaluator. Harbour is a neutral public opponent; narration is scripted. No Discord, account, model key or paid service is required.
+A local human-versus-opponent Float Chess slice reuses the existing engine and heuristic evaluator. The review chapter follows Violet, a separate character cosplaying Pennywise, through Derry and a bounded match against Pennywise; narration is scripted. No Discord, account, model key or paid service is required.
 
 ```sh
 # Node 18 or later; from the repository root, no install required

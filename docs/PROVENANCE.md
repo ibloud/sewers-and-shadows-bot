@@ -15,3 +15,7 @@ Access/preservation date: 4 November 2026. Access date is not a creation date. T
 | Morgue, Duet and other workstreams | User supplied their separation as a task boundary. Repository engine inspection confirms this implementation uses Float Chess. | No reuse of Morgue scripted cues, separate Duet mechanics, Ren’s Rhapsody or Break This Build. No affiliation or canon connection inferred. |
 
 Related sources: repository [history](https://github.com/ibloud/sewers-and-shadows-bot/commits/main/), [mission](https://github.com/ibloud/ibloud.github.io/blob/main/MISSION.md), [collaboration terms](https://github.com/ibloud/ibloud.github.io/blob/main/COLLABORATE.md). The rights matrix supplies attributed project statements, not independent clearance. No source material, dates, bylines or original historical prompts were rewritten to resolve uncertainty.
+
+## Chapter amendment
+
+The current player-facing matchup is Violet versus Pennywise, as requested by the owner. The historical Harbour proposal above describes PR #3's first revision. See [CHAPTER-REVIEW.md](CHAPTER-REVIEW.md) for the new Ink draft, screenshots, item and symbol provenance, runtime license and unresolved publication boundaries. No claim of character clearance follows from this amendment.

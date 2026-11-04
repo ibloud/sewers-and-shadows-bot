@@ -4,6 +4,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { bundle } = require('./build.js');
 const assets = { '/': ['index.html', 'text/html'], '/index.html': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'] };
+for(const f of ['chapter.js','story.js','vendor/ink-full.js']) assets['/'+f]=[f,'text/javascript'];
+assets['/symbol.png']=['symbol.png','image/png'];
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost').pathname;
   res.setHeader('Content-Security-Policy', "default-src 'self'; connect-src 'none'; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");

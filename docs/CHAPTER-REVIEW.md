@@ -1,0 +1,36 @@
+# Chapter one: review handoff — 4 November 2026
+
+This amendment continues draft PR #3 on `codex/browser-training-review`, starting at `74dcd4748294095f9f8016d827dd2624a3c41124`. It supersedes the neutral Harbour matchup in the player-facing app, not the historical implementation record. New story prose is an AI-assisted review draft based on the owner's sequence, not approved character canon. Violet is a separate character cosplaying Pennywise. No stage or production deployment was made for this amendment.
+
+## Source trace
+
+- Float Chess remains `bot/float-chess-engine.js` at main `8140e08b92240eeaf53485964348d91547f97bc9`, unchanged. `browser/session.js` retains the validated heuristic selection and transactional resolution. Existing unresolved rules/design calls in REVIEW.md still apply.
+- Inspected `ibloud/violets-revenge` at `a2398a910946a7945f849e44b76358faae3a4036`: `story/forensics-trail.ink` demonstrates choice flags and evidence-minded branching; `docs/CHARACTER-BIBLE.md` identifies Violet separately. Its forensic story is not transplanted into Derry. Original lore/assets carry its own LICENSE-ASSETS.md; none of its imagery, dialogue or story passages were copied.
+- Card distinction: Violet's card helpers are separate from this repo's `bot/float-cards-engine.js`. Float Cards has simultaneous card commitments, six-card hands and RP resolution; neither inspected project provides a verified browser adapter for this chapter. The Ink card scene is playable as story choices; its card-game mechanic is explicitly pending.
+- Inspected The Yellow Door in `ibloud/inpatient-corridors-review` at `977ee789c231662b20f4a88f69a09e9e42bb9d8e`: `interactive/yellow-door/docs/index.html` loads local runtime/application scripts; `docs/app.js` fetches compiled story JSON, drains `Continue()`, renders `currentChoices`, calls `ChooseChoiceIndex()`, and uses a native product-preview dialog whose close handler restores launcher focus. This chapter uses the same Ink runtime/choice pattern, compiled locally into a script rather than fetched, textContent instead of HTML insertion, focus on the updated story heading, and Ink-owned inspection choices. No Shopify cart, checkout, credentials or product IDs were copied.
+- inkjs 2.4.0 compiler/runtime pinned from npm package; license in `browser/vendor/INKJS-LICENSE.txt`. It replaces an initially inspected compiler copy from Yellow Door's `rabbit-hole/vendor/ink-full.js` with a known version. No new npm install requirement or network runtime dependency.
+- Accessible Drive concept: “VARIANT: BACK IN DERRY (HORROR-CORE EDITION)”, dated 30 June 2026, concept stage. It concerns another Veiled Dominion variant, not Float Chess authority. No internal brief passages were copied into the app and none of its mechanic proposals replace the existing engine. Other search results were not treated as relevant story canon.
+
+## State ownership and chapter contract
+
+`story/derry.ink` owns approach, sticker, candle, hoodie, revealed route, encounter entry/result and chapter completion. JS only renders the Ink state and supplies a validated encounter result. `browser/chapter.js` rejects any second result once Ink's result is nonempty. Choice buttons are replaced after activation. `browser/app.js` runs the original match, returning after an engine result, three resolved simultaneous turns (`bounded`, explicitly no winner), or voluntary leave. Repeated confirmation cannot deliver another result. A new chapter is a fresh Ink Story; starting a new encounter resets the engine.
+
+The browser saves Ink state to sessionStorage when available. Reloading an unfinished encounter returns to the story as `left`, rather than claiming a saved engine match or inventing a result. Match state remains owned by the engine in memory. No purchase, shop visit or sign-in gates progression.
+
+2D and fixed-camera CSS 3D are two presentations of the same DOM board and Match instance; no parallel simulation, game record or geometry-dependent legality exists. The 3D view is a modest CSS perspective presentation, not a modelled 3D sewer environment. Coordinate controls remain unchanged. No Polyfork assets, external models or textures are used.
+
+## Items and shop verification
+
+Owner supplied the Dallas XY collection URL, https://www.daddyslittlemortis.com/shop/dallas-xy, and iPad screenshots on 4 November. They visibly establish “Glass jar soy wax candle”, “Bubble-free stickers”, and “Essential Heavyweight Hoodie”. The hoodie screenshot shows a black garment with a front badge; candle/sticker have printed designs. Story descriptions distinguish those observations from invented clue arrows and Violet's orange-red/pale-yellow costume additions. No screenshot artwork, printed quotation, price or stock claim is embedded in the app.
+
+The supplied collection URL returns HTTP 403 through this environment's policy. Individual product destinations cannot be verified from the screenshots. Therefore no item-level View in shop, checkout or sign-in action is shipped. Items remain inspectable and usable. A shop-navigation browser test is pending until an actual verified item URL exists; a fabricated link is not substituted. Later links must open a separate tab with noopener/noreferrer and preserve Ink progress/focus through an inspection dialog.
+
+## Symbol and art provenance
+
+New `browser/symbol.png` is an AI-generated review proposal: balloon, interwoven diamond lattice, central light and sewer arch; not an existing approved mark. Generated 4 November 2026 with the image-generation tool. References inspected: Duet public/index.html nested diamond sigil (lines 39 onward), Loptr Lab ring/triangle/spoke sigil (lines 165 onward), and `Loptr-Lab/veiled-dominion-engine/docs/design/DESIGN_BIBLE.md`. This is an interpretation of their geometric family, not proof of an exact authorized derivative; the specific Weaver source mark was not separately verified. Owner approval of the proposed symbol remains pending. Shared CSS applies the owner's charcoal/bone/red, orange-red/pale-yellow details and desaturated sewer green. No character likeness, product photo, lyrics or music is included. Historical rights boundaries remain, and publication is not authorized by this review amendment.
+
+## Verification and review
+
+`npm run build` compiles Ink and builds static assets; `npm test` runs original 16 engine assertions, 7 session tests and 6 Ink tests. Ink tests cover won/lost/draw/bounded/left returns, inventory/choice flags, ending and reinspection, plus source/compiled parity. Outcome injections validate story branches; they do not claim an independently played full win/loss.
+
+`test/chapter-browser.cjs` checks native pointer story choices, item use, a real engine move, 3D/2D board preservation, leaving, duplicate-result rejection, three-turn return, ending/reinspection, replay, reload recovery, keyboard Enter/focus restoration and 320/390/820/1440 reflow. Captures are in `docs/captures/`. Existing browser smoke is updated to enter the chapter before its game checks. Physical iPad Safari, VoiceOver, assistive hardware, brand approval, exact product links and public rights clearance remain separate pending acceptance. No Roomy posting, AT Protocol identity action, real feedback submission, Railway activation, staging or production publication.
