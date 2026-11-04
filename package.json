@@ -1,0 +1,11 @@
+{
+  "name": "float-chess-browser-review",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "node scripts/preview.js",
+    "build": "node scripts/compile-story.js && node scripts/build.js",
+    "test": "node bot/test-float-chess.js && node test/session.test.js && node --test test/chapter.cjs test/cards.test.cjs"
+  },
+  "engines": { "node": ">=18" }
+}
